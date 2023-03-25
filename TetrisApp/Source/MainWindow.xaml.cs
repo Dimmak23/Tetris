@@ -1,18 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
+using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
 using System.Windows.Controls;
-using System.Windows.Data;
-using System.Windows.Documents;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
-using System.Windows.Navigation;
-using System.Windows.Shapes;
+//using TetrisApp.Controls;
+using TetrisApp.Blocks;
 using TetrisApp.GamePlay;
 using TetrisApp.Grid;
 
@@ -51,10 +46,24 @@ namespace TetrisApp
 
         private GameState gameState = new GameState();
 
+        //public ICommand PlayAgainCommand { get; }
+
+        private readonly int delayMax = 900;
+
+        private readonly int delayMin = 50;
+
+        private readonly int delayStep = 25;
+
+        public int DelayCurrent { get; private set; }
+
         public MainWindow()
         {
             InitializeComponent();
             imageControls = SetupGameCanvas(gameState.GameGrid);
+            //
+            //PlayAgainCommand = new PlayAgainCommand();
+            //DataContext = this;
+            //Loaded += (sender, e) => MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
         }
 
         private Image[,] SetupGameCanvas(GameGrid grid)
@@ -83,6 +92,7 @@ namespace TetrisApp
                 for (int col = 0; col < grid.Columns; col++)
                 {
                     int id = grid[row, col];
+                    imageControls[row, col].Opacity = 1;
                     imageControls[row, col].Source = tileImages[id];
                 }
             }
@@ -92,32 +102,79 @@ namespace TetrisApp
         {
             foreach (Position pos in block.TilePositions())
             {
+                imageControls[pos.Row, pos.Column].Opacity = 1;
                 imageControls[pos.Row, pos.Column].Source = tileImages[block.Id];
+            }
+        }
+
+        private void DrawNextBlock(BlockQueue blockQueue)
+        {
+            Blocks.Block next = blockQueue.NextBlock;
+            NextImage.Source = blockImages[next.Id];
+        }
+
+        private void DrawHeldBlock(Blocks.Block heldBlock)
+        {
+            if (heldBlock == null)
+                HoldImage.Source = blockImages[0];
+            else
+                HoldImage.Source = blockImages[heldBlock.Id];
+        }
+
+        private void DrawGhostBlock(Blocks.Block block)
+        {
+            int dropDistance = gameState.BlockDropDistance();
+
+            foreach (Position pos in block.TilePositions())
+            {
+                imageControls[pos.Row + dropDistance, pos.Column].Opacity = 0.25;
+                imageControls[pos.Row + dropDistance, pos.Column].Source = tileImages[block.Id];
             }
         }
 
         private void Draw(GameState gamestate)
         {
             DrawGrid(gamestate.GameGrid);
+            DrawGhostBlock(gameState.CurrentBlock); // Draw ghost before current block, or ghost will appear above current block
             DrawBlock(gamestate.CurrentBlock);
+            DrawNextBlock(gamestate.BlockQueue);
+            DrawHeldBlock(gameState.HeldBlock);
+            ScoreText.Text = $"Score: {gameState.Score}";
         }
 
         private async Task GameLoop()
         {
             Draw(gameState);
-            while (!gameState.GameOver)
-            {
-                await Task.Delay(200);
-                gameState.MoveBlockDown();
-                Draw(gameState);
-            }
 
-            GameOverMenu.Visibility = Visibility.Visible;
+            while (!gameState.GameOver && !gameState.GameRestarted)
+            {
+                DelayCurrent = Math.Max(delayMin, delayMax - (gameState.Score * delayStep));
+                await Task.Delay(DelayCurrent);
+
+                if (gameState.GamePause)
+                {
+                    await Task.Delay(1); // sleep for 1 millisecond
+                }
+                else
+                {
+                    gameState.MoveBlockDown();
+                    Draw(gameState);
+                }
+            }
+            if (gameState.GameOver)
+            {
+                GameOverMenu.Visibility = Visibility.Visible;
+                FinalScoreText.Text = $"Your final score is: {gameState.Score}";
+            }
+            else
+            {
+                gameState.GameRestarted = false;
+            }
         }
 
-        private void Window_KeyDown(object sender, KeyEventArgs events)
+        private async void Window_KeyDown(object sender, KeyEventArgs events)
         {
-            if (gameState.GameOver) return;
+            //if (gameState.GameOver) return;
             switch (events.Key)
             {
                 case Key.Left:
@@ -135,6 +192,37 @@ namespace TetrisApp
                 case Key.A:
                     gameState.RotateBlockCCW();
                     break;
+                case Key.S:
+                    gameState.HoldBlock();
+                    break;
+                case Key.Space:
+                    gameState.DropBlock();
+                    break;
+                case Key.Escape:
+                    if (gameState.GameStarted)
+                    {
+                        GamePauseMenu.Visibility = Visibility.Visible;
+                        gameState.GamePause = true;
+                    }
+                    else Application.Current.Shutdown();
+                    break;
+                case Key.Return:
+                    if (gameState.GameOver)
+                    {
+                        gameState = new GameState();
+                        GameOverMenu.Visibility = Visibility.Hidden;
+                        await GameLoop();
+                    }
+                    else if (!gameState.GameStarted)
+                    {
+                        gameState = new GameState
+                        {
+                            GameStarted = true
+                        };
+                        GameStartMenu.Visibility = Visibility.Hidden;
+                        await GameLoop();
+                    }
+                    break;
                 default:
                     return;
             }
@@ -142,14 +230,51 @@ namespace TetrisApp
             Draw(gameState);
         }
 
-        private async void GameCanvas_Loaded(object sender, RoutedEventArgs events)
-        {
-            await GameLoop();
-            //Draw(gameState);
-        }
-        private void PlayAgain_Click(object sender, RoutedEventArgs events)
-        {
+        //private async void GameCanvas_Loaded(object sender, RoutedEventArgs events)
+        //{
+        //await GameLoop();
+        //Draw(gameState);
+        //}
 
+        private async void StartGame_Click(object sender, RoutedEventArgs events)
+        {
+            gameState = new GameState();
+            gameState.GameStarted = true;
+            GameStartMenu.Visibility = Visibility.Hidden;
+            await GameLoop();
+        }
+
+        private async void Restart_Click(object sender, RoutedEventArgs events)
+        {
+            gameState = new GameState();
+            gameState.GameStarted = true;
+            gameState.GameRestarted = true; //*
+            GamePauseMenu.Visibility = Visibility.Hidden;
+            GameOverMenu.Visibility = Visibility.Hidden;
+            DelayCurrent = 0;
+            await GameLoop();
+        }
+
+        private async void PlayAgain_Click(object sender, RoutedEventArgs events)
+        {
+            gameState = new GameState();
+            gameState.GameStarted = true;
+            GamePauseMenu.Visibility = Visibility.Hidden;
+            GameOverMenu.Visibility = Visibility.Hidden;
+            DelayCurrent = 0;
+            await GameLoop();
+        }
+
+        private void UnPauseGame_Click(object sender, RoutedEventArgs events)
+        {
+            gameState.GamePause = false;
+            GamePauseMenu.Visibility = Visibility.Hidden;
+            //await GameLoop();
+        }
+
+        private void QuitGame_Click(object sender, RoutedEventArgs events)
+        {
+            Application.Current.Shutdown();
         }
     }
 }
