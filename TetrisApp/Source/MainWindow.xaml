@@ -13,10 +13,12 @@
         >
 
     <Grid>
+
         <Grid.RowDefinitions>
             <RowDefinition Height="auto"/>
             <RowDefinition Height="*"/>
         </Grid.RowDefinitions>
+
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="auto"/>
@@ -24,18 +26,22 @@
         </Grid.ColumnDefinitions>
 
         <Grid.Background>
-            <ImageBrush ImageSource="../Assets/Background.png" />
+            <ImageBrush x:Name="BackgroundBrush" ImageSource="../Assets/Background.png" Opacity="1.0"/>
         </Grid.Background>
-        <Viewbox Grid.Row="1"
-                Grid.Column="1"
-                 Margin= "0,0,0,20">
-            <Canvas x:Name="GameCanvas"
+
+        <Viewbox
+            Grid.Row="1"
+            Grid.Column="1"
+            Margin= "0,0,0,20">
+            <Canvas
+                x:Name="GameCanvas"
                 Background="Black"
                 Width="250"
                 Height="500"
-                    ClipToBounds="True"
-                    Loaded="GameCanvas_Loaded"
+                ClipToBounds="True"
+                Visibility="Visible"
                 />
+            <!--Loaded="GameCanvas_Loaded"-->
         </Viewbox>
 
         <TextBlock x:Name="ScoreText"
@@ -44,13 +50,15 @@
                    Text="Score: "
                    Margin="0,10"
                    TextAlignment="Center"
+                   Visibility="Visible"
                    />
 
-        <StackPanel
+        <StackPanel x:Name="HoldPanel"
             Grid.Row="1"
             Grid.Column="0"
             VerticalAlignment="Center"
             HorizontalAlignment="Right"
+            Visibility="Visible"
             >
             <TextBlock
                 Text="Hold"
@@ -63,11 +71,12 @@
                 />
         </StackPanel>
 
-        <StackPanel
+        <StackPanel x:Name="NextPanel"
             Grid.Row="1"
             Grid.Column="2"
             VerticalAlignment="Center"
             HorizontalAlignment="Left"
+            Visibility="Visible"
             >
             <TextBlock
                 Text="Next"
@@ -80,13 +89,78 @@
                 />
         </StackPanel>
 
+        <Grid x:Name="GameStartMenu"
+              Background="Black"
+              Grid.RowSpan="2"
+              Grid.ColumnSpan="3"
+              Visibility="Visible"
+              >
+            <StackPanel
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                >
+                <TextBlock
+                    Text="Welcome to the Tetris game!"
+                    FontSize="48"
+                    TextAlignment="Center"
+                    />
+
+                <Button Content="Start!"
+                        Background="LightCoral"
+                        Margin="220,20,220,0"
+                        Padding="5"
+                        Click="StartGame_Click">
+                    <!-- 
+                    <Button.InputBindings>
+                        <KeyBinding Key="Enter" Modifiers="Ctrl" Command="{Binding PlayAgainCommand}" />
+                    </Button.InputBindings>
+                    -->
+                </Button>
+            </StackPanel>
+        </Grid>
+
+        <Grid x:Name="GamePauseMenu"
+              Background="#CC000000"
+              Grid.RowSpan="2"
+              Grid.ColumnSpan="3"
+              Visibility="Hidden"
+              >
+            <StackPanel
+                VerticalAlignment="Center"
+                HorizontalAlignment="Center"
+                >
+                <TextBlock
+                    Text="On pause... What to do?"
+                    FontSize="48"
+                    TextAlignment="Center"
+                    />
+                <Button Content="Continue"
+                        Background="LightCyan"
+                        Margin="220,20,220,0"
+                        Padding="5"
+                        Click="UnPauseGame_Click">
+                </Button>
+                <Button Content="Re-Start"
+                        Background="LightGreen"
+                        Margin="220,20,220,0"
+                        Padding="5"
+                        Click="Restart_Click">
+                </Button>
+                <Button Content="Quit"
+                        Background="LightSalmon"
+                        Margin="220,20,220,0"
+                        Padding="5"
+                        Click="QuitGame_Click">
+                </Button>
+            </StackPanel>
+        </Grid>
+
         <Grid x:Name="GameOverMenu"
               Background="#CC000000"
               Grid.RowSpan="2"
               Grid.ColumnSpan="3"
               Visibility="Hidden"
               >
-
             <StackPanel
                 VerticalAlignment="Center"
                 HorizontalAlignment="Center"
@@ -99,14 +173,22 @@
                 <TextBlock
                     x:Name="FinalScoreText"
                     Text="Score: "
-                    FontSize="36"
+                    FontSize="26"
                     TextAlignment="Center"
                     />
+
                 <Button Content="Play Again"
                         Background="LightGreen"
                         Margin="0,20,0,0"
                         Padding="5"
-                        Click="PlayAgain_Click"/>
+                        Click="PlayAgain_Click"
+                        >
+                    <!--
+                    <Button.InputBindings>
+                        <KeyBinding Key="Return" Modifiers="" Command="{Binding PlayAgainCommand}" />
+                    </Button.InputBindings>
+                    -->
+                </Button>
             </StackPanel>
         </Grid>
 
