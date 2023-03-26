@@ -1,4 +1,6 @@
-﻿using TetrisApp.Grid;
+﻿using System.Windows.Media;
+using System;
+using TetrisApp.Grid;
 
 namespace TetrisApp.GamePlay
 {
@@ -34,6 +36,8 @@ namespace TetrisApp.GamePlay
         public bool GameStarted { get; set; }
 
         public bool GameRestarted { get; set; }
+
+        public bool RowCleared { get; set; }
 
         public int Score { get; private set; }
 
@@ -121,9 +125,18 @@ namespace TetrisApp.GamePlay
                 GameGrid[pos.Row, pos.Column] = CurrentBlock.Id;
             }
 
+            int previousScore = Score;
+
             Score += GameGrid.ClearFullRows();
 
-            if (!GameGrid.IsRowEmpty(1)) GameOver = true;
+            //if (previousScore != Score) PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\success.wav");
+            if (previousScore != Score) RowCleared = true;
+
+            if (!GameGrid.IsRowEmpty(1))
+            {
+                //PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\loose.wav");
+                GameOver = true;
+            }
             else
             {
                 CurrentBlock = BlockQueue.GetAndUpdate();
@@ -165,6 +178,27 @@ namespace TetrisApp.GamePlay
         {
             CurrentBlock.Move(BlockDropDistance(), 0);
             PlaceBlock();
+            //PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\throw.wav");
         }
+
+        /*
+            It turns out that MediaPlayer does not play the music files in embedded resources,
+            quote from Matthew MacDonald book:Pro WPF 4.5 in C#. Chapter 26:
+
+        You supply the location of your file as a URI. Unfortunately, this URI doesn’t use the application pack syntax,
+        so it’s not possible to embed an audio file and play it using the MediaPlayer class. This limitation is because
+        the MediaPlayer class is built on functionality that’s not native to WPF—instead, it’s provided by a distinct,
+        unmanaged component of the Windows Media Player.
+
+            Therefore, try setting the local path to the your music file:
+            For workaround, see this link: https://web.archive.org/web/20130602042421/http://sekagra.com/wp/2011/12/playing-embedded-audio-files-in-wpf/
+         */
+        //public static void PlaySound(System.String path)
+        //{
+        //    var uri = new Uri(path, UriKind.Relative);
+        //    var player = new MediaPlayer();
+        //    player.Open(uri);
+        //    player.Play();
+        //}
     }
 }

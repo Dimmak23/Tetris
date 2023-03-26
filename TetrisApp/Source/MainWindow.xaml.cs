@@ -52,7 +52,7 @@ namespace TetrisApp
 
         private readonly int delayMin = 50;
 
-        private readonly int delayStep = 25;
+        private readonly int delayStep = 12;
 
         public int DelayCurrent { get; private set; }
 
@@ -158,11 +158,18 @@ namespace TetrisApp
                 else
                 {
                     gameState.MoveBlockDown();
+                    if (gameState.RowCleared)
+                    {
+                        PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\success.wav");
+                        await Task.Delay(1000); // sleep for 1 second
+                        gameState.RowCleared = false;
+                    }
                     Draw(gameState);
                 }
             }
             if (gameState.GameOver)
             {
+                PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\loose.wav");
                 GameOverMenu.Visibility = Visibility.Visible;
                 FinalScoreText.Text = $"Your final score is: {gameState.Score}";
             }
@@ -197,6 +204,7 @@ namespace TetrisApp
                     break;
                 case Key.Space:
                     gameState.DropBlock();
+                    PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\throw.wav");
                     break;
                 case Key.Escape:
                     if (gameState.GameStarted)
@@ -275,6 +283,14 @@ namespace TetrisApp
         private void QuitGame_Click(object sender, RoutedEventArgs events)
         {
             Application.Current.Shutdown();
+        }
+
+        public static void PlaySound(System.String path)
+        {
+            //var uri = new Uri(path, UriKind.Absolute);
+            var player = new MediaPlayer();
+            player.Open(new Uri(path, UriKind.Absolute));
+            player.Play();
         }
     }
 }
