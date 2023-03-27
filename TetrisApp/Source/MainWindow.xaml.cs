@@ -56,6 +56,8 @@ namespace TetrisApp
 
         public int DelayCurrent { get; private set; }
 
+        private readonly String appPath;
+
         public MainWindow()
         {
             InitializeComponent();
@@ -64,6 +66,7 @@ namespace TetrisApp
             //PlayAgainCommand = new PlayAgainCommand();
             //DataContext = this;
             //Loaded += (sender, e) => MoveFocus(new TraversalRequest(FocusNavigationDirection.Next));
+            appPath = AppDomain.CurrentDomain.BaseDirectory;
         }
 
         private Image[,] SetupGameCanvas(GameGrid grid)
@@ -148,8 +151,8 @@ namespace TetrisApp
 
             while (!gameState.GameOver && !gameState.GameRestarted)
             {
-                DelayCurrent = Math.Max(delayMin, delayMax - (gameState.Score * delayStep));
-                await Task.Delay(DelayCurrent);
+                int delay = Math.Max(delayMin, delayMax - (gameState.Score * delayStep));
+                await Task.Delay(delay);
 
                 if (gameState.GamePause)
                 {
@@ -160,7 +163,8 @@ namespace TetrisApp
                     gameState.MoveBlockDown();
                     if (gameState.RowCleared)
                     {
-                        PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\success.wav");
+                        //PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\success.wav");
+                        PlaySound(appPath + "\\Assets\\Sounds\\success.wav");
                         await Task.Delay(1000); // sleep for 1 second
                         gameState.RowCleared = false;
                     }
@@ -169,7 +173,8 @@ namespace TetrisApp
             }
             if (gameState.GameOver)
             {
-                PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\loose.wav");
+                //PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\loose.wav");
+                PlaySound(appPath + "\\Assets\\Sounds\\loose.wav");
                 GameOverMenu.Visibility = Visibility.Visible;
                 FinalScoreText.Text = $"Your final score is: {gameState.Score}";
             }
@@ -203,11 +208,20 @@ namespace TetrisApp
                     gameState.HoldBlock();
                     break;
                 case Key.Space:
-                    gameState.DropBlock();
-                    PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\throw.wav");
+                    if (gameState.GamePause)
+                    {
+                        GamePauseMenu.Visibility = Visibility.Hidden;
+                        gameState.GamePause = false;
+                    }
+                    else
+                    {
+                        gameState.DropBlock();
+                        //PlaySound("D:\\CSHARP\\Projects\\WPF_Projects\\Tetris\\TetrisApp\\Assets\\Sounds\\throw.wav");
+                        PlaySound(appPath + "\\Assets\\Sounds\\throw.wav");
+                    }
                     break;
                 case Key.Escape:
-                    if (gameState.GameStarted)
+                    if (gameState.GameStarted && !gameState.GameOver && !gameState.GamePause)
                     {
                         GamePauseMenu.Visibility = Visibility.Visible;
                         gameState.GamePause = true;
@@ -215,10 +229,14 @@ namespace TetrisApp
                     else Application.Current.Shutdown();
                     break;
                 case Key.Return:
-                    if (gameState.GameOver)
+                    if (gameState.GameOver || gameState.GamePause)
                     {
                         gameState = new GameState();
                         GameOverMenu.Visibility = Visibility.Hidden;
+                        GamePauseMenu.Visibility = Visibility.Hidden;
+                        gameState.GamePause = false;
+                        gameState.GameOver = false;
+                        gameState.GameStarted = true;
                         await GameLoop();
                     }
                     else if (!gameState.GameStarted)
@@ -259,7 +277,7 @@ namespace TetrisApp
             gameState.GameRestarted = true; //*
             GamePauseMenu.Visibility = Visibility.Hidden;
             GameOverMenu.Visibility = Visibility.Hidden;
-            DelayCurrent = 0;
+            //DelayCurrent = 0;
             await GameLoop();
         }
 
@@ -269,7 +287,7 @@ namespace TetrisApp
             gameState.GameStarted = true;
             GamePauseMenu.Visibility = Visibility.Hidden;
             GameOverMenu.Visibility = Visibility.Hidden;
-            DelayCurrent = 0;
+            //DelayCurrent = 0;
             await GameLoop();
         }
 
